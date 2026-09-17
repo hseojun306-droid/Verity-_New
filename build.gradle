@@ -1,0 +1,4 @@
+plugins { id 'com.android.application' }
+android { namespace 'com.verity.app'; compileSdk 35
+ defaultConfig { applicationId 'com.verity.app'; minSdk 26; targetSdk 35; versionCode 2; versionName '2.0' }
+}
