@@ -1,0 +1,69 @@
+name: Build Verity APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK
+        run: |
+          sdkmanager "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Extract Verity project
+        run: |
+          set -e
+          mkdir -p _verity_project
+
+          ZIP_FILE=$(find . -maxdepth 1 -type f \
+            -name 'Verity_Android_Widget_AI_v1*.zip' | head -n 1)
+
+          if [ -z "$ZIP_FILE" ]; then
+            echo "Verity Android ZIP을 찾지 못했습니다."
+            exit 1
+          fi
+
+          unzip -o "$ZIP_FILE" -d _verity_project
+
+      - name: Find Android project
+        run: |
+          PROJECT_DIR=$(find _verity_project -type f \
+            -name 'settings.gradle' -print | head -n 1 | xargs dirname)
+
+          if [ -z "$PROJECT_DIR" ]; then
+            echo "Android 프로젝트를 찾지 못했습니다."
+            exit 1
+          fi
+
+          echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
+          echo "프로젝트 위치: $PROJECT_DIR"
+
+      - name: Build APK
+        run: |
+          cd "$PROJECT_DIR"
+          gradle :app:assembleDebug --no-daemon
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Verity-debug-apk
+          path: ${{ env.PROJECT_DIR }}/app/build/outputs/apk/debug/app-debug.apk
