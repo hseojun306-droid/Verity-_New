@@ -25,38 +25,32 @@ jobs:
         with:
           gradle-version: '8.9'
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install Android SDK
+      - name: Prepare Android SDK
         run: |
+          set -e
+          export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH"
+          yes | sdkmanager --licenses >/dev/null || true
           sdkmanager "platforms;android-35" "build-tools;35.0.0"
 
       - name: Extract Verity project
         run: |
           set -e
           mkdir -p _verity_project
-
-          ZIP_FILE=$(find . -maxdepth 1 -type f \
-            -name 'Verity_Android_Widget_AI_v1*.zip' | head -n 1)
-
+          ZIP_FILE=$(find . -maxdepth 1 -type f -iname 'Verity_Android_Widget*.zip' | head -n 1)
           if [ -z "$ZIP_FILE" ]; then
             echo "Verity Android ZIP을 찾지 못했습니다."
             exit 1
           fi
-
           unzip -o "$ZIP_FILE" -d _verity_project
 
       - name: Find Android project
         run: |
-          PROJECT_DIR=$(find _verity_project -type f \
-            -name 'settings.gradle' -print | head -n 1 | xargs dirname)
-
+          set -e
+          PROJECT_DIR=$(find _verity_project -type f -name 'settings.gradle' -print -quit | xargs dirname)
           if [ -z "$PROJECT_DIR" ]; then
             echo "Android 프로젝트를 찾지 못했습니다."
             exit 1
           fi
-
           echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
           echo "프로젝트 위치: $PROJECT_DIR"
 
